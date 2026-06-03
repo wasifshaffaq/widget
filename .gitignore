@@ -8,3 +8,4 @@ debug_stdout.log
 github_setup.js
 github_pat.txt
 upload_release.js
+update_repo_details.js
