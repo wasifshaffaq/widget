@@ -1,0 +1,7 @@
+node_modules/
+dist/
+BatteryWidget-win32-x64/
+debug_stderr.log
+debug_stdout.log
+*.log
+.DS_Store

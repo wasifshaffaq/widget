@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Battery Widget</title>
+  <link rel="stylesheet" href="widget.css">
+</head>
+<body>
+  <div class="widget-container" id="widgetContainer">
+    <div class="widget-card" id="widgetCard">
+      <!-- Slot 1 -->
+      <div class="slot" id="slot-1">
+        <div class="gauge-container">
+          <svg class="progress-ring" width="66" height="66">
+            <circle class="progress-ring__track" stroke="rgba(120, 120, 128, 0.2)" stroke-width="4.5" fill="transparent" r="28" cx="33" cy="33"/>
+            <circle class="progress-ring__bar" stroke="#30D158" stroke-width="4.5" fill="transparent" r="28" cx="33" cy="33" stroke-linecap="round"/>
+          </svg>
+          <div class="device-icon" id="icon-1"></div>
+          <div class="charging-indicator" id="charge-1">
+            <!-- Lightning bolt SVG -->
+            <svg viewBox="0 0 24 24" width="10" height="10" fill="#30D158">
+              <path d="M11 21h-1l1-7H7.5c-.6 0-1-.4-1-1 0-.2 0-.3.1-.5l3.5-8h1.5l-1 7h3.5c.6 0 1 .4 1 1 0 .2 0 .3-.1.5l-3.5 8z"/>
+            </svg>
+          </div>
+        </div>
+        <div class="percentage-label" id="label-1">--</div>
+        <div class="device-name-label" id="name-1"></div>
+      </div>
+
+      <!-- Slot 2 -->
+      <div class="slot" id="slot-2">
+        <div class="gauge-container">
+          <svg class="progress-ring" width="66" height="66">
+            <circle class="progress-ring__track" stroke="rgba(120, 120, 128, 0.2)" stroke-width="4.5" fill="transparent" r="28" cx="33" cy="33"/>
+            <circle class="progress-ring__bar" stroke="#30D158" stroke-width="4.5" fill="transparent" r="28" cx="33" cy="33" stroke-linecap="round"/>
+          </svg>
+          <div class="device-icon" id="icon-2"></div>
+          <div class="charging-indicator" id="charge-2">
+            <svg viewBox="0 0 24 24" width="10" height="10" fill="#30D158">
+              <path d="M11 21h-1l1-7H7.5c-.6 0-1-.4-1-1 0-.2 0-.3.1-.5l3.5-8h1.5l-1 7h3.5c.6 0 1 .4 1 1 0 .2 0 .3-.1.5l-3.5 8z"/>
+            </svg>
+          </div>
+        </div>
+        <div class="percentage-label" id="label-2">--</div>
+        <div class="device-name-label" id="name-2"></div>
+      </div>
+
+      <!-- Slot 3 -->
+      <div class="slot" id="slot-3">
+        <div class="gauge-container">
+          <svg class="progress-ring" width="66" height="66">
+            <circle class="progress-ring__track" stroke="rgba(120, 120, 128, 0.2)" stroke-width="4.5" fill="transparent" r="28" cx="33" cy="33"/>
+            <circle class="progress-ring__bar" stroke="#30D158" stroke-width="4.5" fill="transparent" r="28" cx="33" cy="33" stroke-linecap="round"/>
+          </svg>
+          <div class="device-icon" id="icon-3"></div>
+          <div class="charging-indicator" id="charge-3">
+            <svg viewBox="0 0 24 24" width="10" height="10" fill="#30D158">
+              <path d="M11 21h-1l1-7H7.5c-.6 0-1-.4-1-1 0-.2 0-.3.1-.5l3.5-8h1.5l-1 7h3.5c.6 0 1 .4 1 1 0 .2 0 .3-.1.5l-3.5 8z"/>
+            </svg>
+          </div>
+        </div>
+        <div class="percentage-label" id="label-3">--</div>
+        <div class="device-name-label" id="name-3"></div>
+      </div>
+
+      <!-- Slot 4 -->
+      <div class="slot" id="slot-4">
+        <div class="gauge-container">
+          <svg class="progress-ring" width="66" height="66">
+            <circle class="progress-ring__track" stroke="rgba(120, 120, 128, 0.2)" stroke-width="4.5" fill="transparent" r="28" cx="33" cy="33"/>
+            <circle class="progress-ring__bar" stroke="#30D158" stroke-width="4.5" fill="transparent" r="28" cx="33" cy="33" stroke-linecap="round"/>
+          </svg>
+          <div class="device-icon" id="icon-4"></div>
+          <div class="charging-indicator" id="charge-4">
+            <svg viewBox="0 0 24 24" width="10" height="10" fill="#30D158">
+              <path d="M11 21h-1l1-7H7.5c-.6 0-1-.4-1-1 0-.2 0-.3.1-.5l3.5-8h1.5l-1 7h3.5c.6 0 1 .4 1 1 0 .2 0 .3-.1.5l-3.5 8z"/>
+            </svg>
+          </div>
+        </div>
+        <div class="percentage-label" id="label-4">--</div>
+        <div class="device-name-label" id="name-4"></div>
+      </div>
+
+      <!-- Info Panel (Only shown in single slot mode) -->
+      <div class="info-panel" id="infoPanel" style="display: none;">
+        <div class="info-title" id="infoTitle">Searching...</div>
+        <div class="info-row">
+          <span class="info-badge" id="infoBadge">Connected</span>
+          <span class="info-category" id="infoCategory">Bluetooth</span>
+        </div>
+        <div class="info-mac" id="infoMac">---</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="widget.js"></script>
+</body>
+</html>

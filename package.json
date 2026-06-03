@@ -1,0 +1,45 @@
+{
+  "name": "widget",
+  "version": "1.0.0",
+  "description": "iOS-Style Customizable Desktop Battery Widget",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "test": "node test_widget.js",
+    "dist": "electron-builder",
+    "package": "electron-packager . BatteryWidget --platform=win32 --arch=x64 --overwrite"
+  },
+  "keywords": [
+    "widget",
+    "battery",
+    "desktop",
+    "electron"
+  ],
+  "author": "Antigravity",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^26.8.1",
+    "electron-packager": "^17.1.2"
+  },
+  "build": {
+    "appId": "com.battery.widget",
+    "productName": "BatteryWidget",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Battery Widget"
+    }
+  }
+}

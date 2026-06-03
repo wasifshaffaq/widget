@@ -1,0 +1,52 @@
+{
+  "widget": {
+    "x": 1284,
+    "y": 64,
+    "scale": 0.85,
+    "opacity": 1,
+    "alwaysOnTop": false,
+    "clickThrough": false,
+    "theme": "dark",
+    "blur": 32,
+    "backgroundColor": "rgba(20, 20, 22, 0.45)",
+    "borderColor": "rgba(255, 255, 255, 0.12)",
+    "accentColor": "#30d158",
+    "showPercentageText": true,
+    "updateIntervalMs": 4000,
+    "visibleSlots": 1
+  },
+  "slots": [
+    {
+      "id": 1,
+      "type": "bluetooth_device",
+      "name": "pTron BT",
+      "icon": "earbuds",
+      "mockPercent": 100,
+      "mockCharging": false
+    },
+    {
+      "id": 2,
+      "type": "cpu",
+      "name": "",
+      "icon": "cpu",
+      "mockPercent": 100,
+      "mockCharging": false
+    },
+    {
+      "id": 3,
+      "type": "bluetooth_device",
+      "name": "AirPods",
+      "icon": "earbuds",
+      "mockPercent": 100,
+      "mockCharging": false
+    },
+    {
+      "id": 4,
+      "type": "simulated",
+      "name": "AirPods Case",
+      "icon": "case",
+      "mockPercent": 38,
+      "mockCharging": false
+    }
+  ]
+}

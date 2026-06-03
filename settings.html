@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Battery Widget Settings</title>
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+  <div class="settings-container">
+    <header class="settings-header">
+      <h1>Battery Widget Configuration</h1>
+      <p class="subtitle">Customize your desktop battery monitor widget</p>
+    </header>
+
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab('general')">General Settings</button>
+      <button class="tab-btn" onclick="switchTab('slots')">Slot Configuration</button>
+      <button class="tab-btn" onclick="switchTab('info')">Tips & Info</button>
+    </div>
+
+    <form id="settingsForm" class="settings-form">
+      
+      <!-- Tab 1: General Settings -->
+      <div id="tab-general" class="tab-content active">
+        <div class="form-group-row">
+          <div class="form-group">
+            <label for="scale">Widget Scale</label>
+            <div class="range-container">
+              <input type="range" id="scale" min="0.6" max="2.0" step="0.05">
+              <span class="range-val" id="scaleVal">1.0</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="opacity">Widget Opacity</label>
+            <div class="range-container">
+              <input type="range" id="opacity" min="0.1" max="1.0" step="0.05">
+              <span class="range-val" id="opacityVal">0.85</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group-row">
+          <div class="form-group">
+            <label for="blur">Glass Blur Radius</label>
+            <div class="range-container">
+              <input type="range" id="blur" min="0" max="50" step="1">
+              <span class="range-val" id="blurVal">25px</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="updateIntervalMs">Poll Interval (seconds)</label>
+            <div class="range-container">
+              <input type="range" id="updateIntervalMs" min="1000" max="30000" step="1000">
+              <span class="range-val" id="updateIntervalVal">5s</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group-row">
+          <div class="form-group">
+            <label for="backgroundColor">Background Color (RGBA)</label>
+            <input type="text" id="backgroundColor" placeholder="rgba(20, 20, 22, 0.45)">
+          </div>
+          <div class="form-group">
+            <label for="accentColor">Accent Color (Hex)</label>
+            <input type="color" id="accentColor" style="height: 38px; padding: 2px;">
+          </div>
+        </div>
+
+        <div class="form-group-row">
+          <div class="form-group">
+            <label for="visibleSlots">Visible Slots Count</label>
+            <select id="visibleSlots">
+              <option value="1">1 Slot</option>
+              <option value="2">2 Slots</option>
+              <option value="3">3 Slots</option>
+              <option value="4">4 Slots</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group-row">
+          <div class="form-group">
+            <label for="x">Position X (px)</label>
+            <input type="number" id="x">
+          </div>
+          <div class="form-group">
+            <label for="y">Position Y (px)</label>
+            <input type="number" id="y">
+          </div>
+        </div>
+
+        <div class="form-group-row checkboxes">
+          <div class="checkbox-group">
+            <input type="checkbox" id="alwaysOnTop">
+            <label for="alwaysOnTop">Always on Top</label>
+          </div>
+          <div class="checkbox-group">
+            <input type="checkbox" id="clickThrough">
+            <label for="clickThrough">Click Through</label>
+          </div>
+          <div class="checkbox-group">
+            <input type="checkbox" id="showPercentageText">
+            <label for="showPercentageText">Show Percentage Text</label>
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button type="button" class="btn secondary" onclick="resetToDefaultPosition()">Reset Position</button>
+        </div>
+      </div>
+
+      <!-- Tab 2: Slot Configurations -->
+      <div id="tab-slots" class="tab-content">
+        <div class="slots-wrapper">
+          <!-- Render 4 slots dynamically via JS for cleaner code -->
+          <div id="slotsContainer"></div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Tips & Info -->
+      <div id="tab-info" class="tab-content">
+        <div class="info-card">
+          <h3>Draggable Widget</h3>
+          <p>You can drag the widget to any position on your desktop. Just hold the <strong>Alt</strong> key while clicking and dragging it.</p>
+        </div>
+
+        <div class="info-card">
+          <h3>Click-Through Mode</h3>
+          <p>When "Click Through" is enabled, mouse clicks will pass directly through the widget onto the desktop or folder underneath it. This prevents the widget from blocking desktop items.</p>
+          <p class="warning-text"><strong>Note:</strong> To disable click-through or re-enter settings once click-through is enabled, double-click or right-click the green battery icon in your <strong>Windows System Tray (bottom right)</strong>.</p>
+        </div>
+
+        <div class="info-card">
+          <h3>Real-Time System Monitoring</h3>
+          <p>You can assign any of the 4 circles to monitor your PC resources in real-time:</p>
+          <ul>
+            <li><strong>CPU:</strong> Displays system-wide processor workload.</li>
+            <li><strong>RAM:</strong> Displays percentage of used system memory.</li>
+            <li><strong>Laptop Battery:</strong> Real-time device charge level and charging indicator.</li>
+            <li><strong>Bluetooth:</strong> Shows battery levels of connected devices (headphones, mouse) that report stats to Windows.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="settings-footer">
+        <button type="button" class="btn secondary" onclick="window.close()">Cancel</button>
+        <button type="submit" class="btn primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>
