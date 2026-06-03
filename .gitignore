@@ -7,3 +7,4 @@ debug_stdout.log
 .DS_Store
 github_setup.js
 github_pat.txt
+upload_release.js
