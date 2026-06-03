@@ -1,6 +1,27 @@
 # 🔋 iOS-Style Desktop Battery Widget for Windows
 
+<div align="center">
+
+[![GitHub Release](https://img.shields.io/github/v/release/wasifshaffaq/widget?style=for-the-badge&color=33cc33)](https://github.com/wasifshaffaq/widget/releases)
+[![Platform Support](https://img.shields.io/badge/Platform-Windows-0078d7?style=for-the-badge&logo=windows)](#)
+[![Built with Electron](https://img.shields.io/badge/Built%20with-Electron-478aef?style=for-the-badge&logo=electron)](#)
+[![GitHub License](https://img.shields.io/github/license/wasifshaffaq/widget?style=for-the-badge&color=blue)](LICENSE)
+
+</div>
+
 A premium, highly customizable, translucent desktop widget for Windows that replicates the clean aesthetic of the iOS battery widget. It monitors and visualizes your PC's resource metrics and connected Bluetooth accessories in real-time, complete with intelligent device routing and category prioritization.
+
+---
+
+## 📸 Preview
+
+<div align="center">
+  <h3>Widget UI</h3>
+  <img src="screenshots/widget.png" alt="iOS Battery Widget Screenshot" width="380" style="border-radius: 8px;" />
+  <br/><br/>
+  <h3>Settings Panel</h3>
+  <img src="screenshots/settings.png" alt="Settings Dashboard Screenshot" width="550" style="border-radius: 8px;" />
+</div>
 
 ---
 
