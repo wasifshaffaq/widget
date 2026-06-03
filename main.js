@@ -4,8 +4,10 @@ const fs = require('fs');
 const os = require('os');
 const { execFile } = require('child_process');
 
-// Configuration Path
-const CONFIG_PATH = path.join(__dirname, 'config.json');
+// Configuration Path Helper
+function getConfigPath() {
+  return path.join(app.getPath('userData'), 'config.json');
+}
 
 // Default Config
 const DEFAULT_CONFIG = {
@@ -53,8 +55,9 @@ const TRAY_ICON_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQ
 // Load Config from disk
 function loadConfig() {
   try {
-    if (fs.existsSync(CONFIG_PATH)) {
-      const data = fs.readFileSync(CONFIG_PATH, 'utf-8');
+    const configPath = getConfigPath();
+    if (fs.existsSync(configPath)) {
+      const data = fs.readFileSync(configPath, 'utf-8');
       config = JSON.parse(data);
       // Merge with defaults to ensure new fields are populated
       config.widget = { ...DEFAULT_CONFIG.widget, ...config.widget };
@@ -62,7 +65,25 @@ function loadConfig() {
         config.slots = [ ...DEFAULT_CONFIG.slots ];
       }
     } else {
-      saveConfig(DEFAULT_CONFIG);
+      // Fallback: Check if there's a template config in the app directory
+      const templatePath = path.join(__dirname, 'config.json');
+      if (fs.existsSync(templatePath)) {
+        try {
+          const data = fs.readFileSync(templatePath, 'utf-8');
+          config = JSON.parse(data);
+          // Merge with defaults
+          config.widget = { ...DEFAULT_CONFIG.widget, ...config.widget };
+          if (!config.slots || config.slots.length !== 4) {
+            config.slots = [ ...DEFAULT_CONFIG.slots ];
+          }
+          saveConfig(config);
+        } catch (templateErr) {
+          console.error('Failed to load template config, using defaults:', templateErr);
+          saveConfig(DEFAULT_CONFIG);
+        }
+      } else {
+        saveConfig(DEFAULT_CONFIG);
+      }
     }
   } catch (err) {
     console.error('Failed to load config, using defaults:', err);
@@ -74,7 +95,10 @@ function loadConfig() {
 function saveConfig(newConfig) {
   try {
     config = newConfig;
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), 'utf-8');
+    const configPath = getConfigPath();
+    // Ensure parent directory exists before writing
+    fs.mkdirSync(path.dirname(configPath), { recursive: true });
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
     if (widgetWindow && !widgetWindow.isDestroyed()) {
       widgetWindow.webContents.send('config-update', config);
     }
@@ -357,8 +381,23 @@ function createWidgetWindow() {
   // Position calculation (Top-Right Default)
   let windowX = config.widget.x;
   let windowY = config.widget.y;
+
+  // Verify that window is within visible screen bounds
+  let isVisible = false;
+  if (windowX !== -1 && windowY !== -1) {
+    const displays = screen.getAllDisplays();
+    for (const display of displays) {
+      const bounds = display.bounds;
+      // If window's top-left corner is inside this display's coordinates, it is visible
+      if (windowX >= bounds.x && windowX < bounds.x + bounds.width &&
+          windowY >= bounds.y && windowY < bounds.y + bounds.height) {
+        isVisible = true;
+        break;
+      }
+    }
+  }
   
-  if (windowX === -1 || windowY === -1) {
+  if (windowX === -1 || windowY === -1 || !isVisible) {
     const primaryDisplay = screen.getPrimaryDisplay();
     const { width: screenWidth } = primaryDisplay.workAreaSize;
     windowX = screenWidth - width - 40;
@@ -375,7 +414,6 @@ function createWidgetWindow() {
     y: windowY,
     frame: false,
     transparent: true,
-    backgroundMaterial: 'acrylic',
     resizable: false,
     alwaysOnTop: config.widget.alwaysOnTop,
     skipTaskbar: true,
@@ -645,7 +683,7 @@ ipcMain.on('drag-window', (event, movementX, movementY) => {
     // Let's persist it to config object so it's live, and write to disk in a debounced way.
     if (global.dragSaveTimeout) clearTimeout(global.dragSaveTimeout);
     global.dragSaveTimeout = setTimeout(() => {
-      fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), 'utf-8');
+      saveConfig(config);
     }, 1000);
   }
 });

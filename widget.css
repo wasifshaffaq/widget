@@ -14,8 +14,8 @@
   user-select: none;
 }
 
-body {
-  background: transparent;
+html, body {
+  background: transparent !important;
   overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
   width: 100vw;
