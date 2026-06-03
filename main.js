@@ -172,7 +172,7 @@ function queryBluetoothBattery() {
               elseif ($category -match 'Phone') { $category = 'Phone' }
               elseif ($category -match 'Watch') { $category = 'Watch' }
               
-              $subDevices = Get-PnpDevice -ErrorAction SilentlyContinue | Where-Object { $_.InstanceId -like "*$mac*" }
+              $subDevices = Get-PnpDevice -Class Bluetooth, System, Keyboard, Mouse, Ports -ErrorAction SilentlyContinue | Where-Object { $_.InstanceId -like "*$mac*" }
               $batteryVal = $null
               foreach ($sd in $subDevices) {
                   $battery = Get-PnpDeviceProperty -InstanceId $sd.InstanceId -KeyName "{104EA319-6EE2-4701-BD47-8DDBF425BBE5} 2" -ErrorAction SilentlyContinue
