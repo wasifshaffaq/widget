@@ -5,3 +5,5 @@ debug_stderr.log
 debug_stdout.log
 *.log
 .DS_Store
+github_setup.js
+github_pat.txt
