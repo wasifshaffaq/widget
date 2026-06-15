@@ -11,8 +11,6 @@ const scaleInput = document.getElementById('scale');
 const scaleVal = document.getElementById('scaleVal');
 const opacityInput = document.getElementById('opacity');
 const opacityVal = document.getElementById('opacityVal');
-const blurInput = document.getElementById('blur');
-const blurVal = document.getElementById('blurVal');
 const updateIntervalInput = document.getElementById('updateIntervalMs');
 const updateIntervalVal = document.getElementById('updateIntervalVal');
 
@@ -48,7 +46,6 @@ function switchTab(tabId) {
 // Live range output updates
 scaleInput.addEventListener('input', () => scaleVal.innerText = parseFloat(scaleInput.value).toFixed(2));
 opacityInput.addEventListener('input', () => opacityVal.innerText = parseFloat(opacityInput.value).toFixed(2));
-blurInput.addEventListener('input', () => blurVal.innerText = `${blurInput.value}px`);
 updateIntervalInput.addEventListener('input', () => updateIntervalVal.innerText = `${updateIntervalInput.value / 1000}s`);
 
 // Reset Position helper
@@ -80,9 +77,6 @@ async function loadSettings() {
     
     opacityInput.value = config.widget.opacity;
     opacityVal.innerText = parseFloat(config.widget.opacity).toFixed(2);
-    
-    blurInput.value = config.widget.blur;
-    blurVal.innerText = `${config.widget.blur}px`;
 
     updateIntervalInput.value = config.widget.updateIntervalMs;
     updateIntervalVal.innerText = `${config.widget.updateIntervalMs / 1000}s`;
@@ -235,7 +229,7 @@ settingsForm.addEventListener('submit', async (e) => {
       alwaysOnTop: alwaysOnTopInput.checked,
       clickThrough: clickThroughInput.checked,
       theme: 'dark',
-      blur: parseInt(blurInput.value),
+      blur: config.widget.blur || 32,
       backgroundColor: backgroundColorInput.value,
       borderColor: config.widget.borderColor, // Preserve default
       accentColor: accentColorInput.value,

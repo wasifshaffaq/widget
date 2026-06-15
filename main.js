@@ -3,6 +3,50 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { execFile } = require('child_process');
+const koffi = require('koffi');
+
+// Disable hardware acceleration to prevent ghosting on transparent Progman child windows
+app.disableHardwareAcceleration();
+app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
+
+// ── Win32 API bindings for desktop embedding ──────────────────────────
+const user32 = koffi.load('user32.dll');
+
+// Proper koffi type definitions
+const HWND = koffi.pointer('HWND', koffi.opaque());
+const BOOL = 'int';
+const LPARAM = 'intptr';
+const WPARAM = 'uintptr';
+const LRESULT = 'intptr';
+
+// Callback type for EnumWindows
+const WNDENUMPROC = koffi.proto('WNDENUMPROC', BOOL, [HWND, LPARAM]);
+
+// Win32 function declarations
+const FindWindowW = user32.func('FindWindowW', HWND, ['str16', 'str16']);
+const FindWindowExW = user32.func('FindWindowExW', HWND, [HWND, HWND, 'str16', 'str16']);
+const SendMessageTimeoutW = user32.func('SendMessageTimeoutW', LRESULT, [HWND, 'uint', WPARAM, LPARAM, 'uint', 'uint', koffi.pointer(koffi.opaque())]);
+const EnumWindows = user32.func('EnumWindows', BOOL, [koffi.pointer(WNDENUMPROC), LPARAM]);
+const SetParent = user32.func('SetParent', HWND, [HWND, HWND]);
+const SetWindowLongPtrW = user32.func('SetWindowLongPtrW', 'intptr', [HWND, 'int', 'intptr']);
+const GetWindowLongPtrW = user32.func('GetWindowLongPtrW', 'intptr', [HWND, 'int']);
+const SetWindowPos = user32.func('SetWindowPos', BOOL, [HWND, HWND, 'int', 'int', 'int', 'int', 'uint']);
+const GetShellWindow = user32.func('GetShellWindow', HWND, []);
+const GetClassNameW = user32.func('GetClassNameW', 'int', [HWND, koffi.out('str16'), 'int']);
+
+// Constants
+const GWL_EXSTYLE = -20;
+const WS_EX_TOOLWINDOW = 0x00000080;
+const WS_EX_NOACTIVATE = 0x08000000;
+const SWP_NOMOVE = 0x0002;
+const SWP_NOSIZE = 0x0001;
+const SWP_NOZORDER = 0x0004;
+const SWP_FRAMECHANGED = 0x0020;
+const SWP_NOACTIVATE = 0x0010;
+const SMTO_NORMAL = 0x0000;
+
+// Desktop embedding state
+let workerWHwnd = null;
 
 // Configuration Path Helper
 function getConfigPath() {
@@ -286,79 +330,161 @@ async function queryHardwareStats() {
   }
 }
 
-// Set the widget's owner to Progman so it stays on the desktop but retains full transparency
-function pinWidgetToDesktop() {
-  const script = `
-$code = @"
-using System;
-using System.Runtime.InteropServices;
-using System.Text;
+// ── Desktop Embedding ─────────────────────────────────────────────────
+// Embeds the Electron widget window as a child of the desktop's WorkerW
+// window, so it sits behind all application windows (like Rainmeter).
+//
+// The standard Windows desktop hierarchy after sending 0x052C to Progman:
+//
+//   Desktop (root)
+//     ├── WorkerW          <-- empty; this is where we embed our widget
+//     └── Progman
+//           └── SHELLDLL_DefView  (desktop icons live here)
+//
+// By SetParent-ing our widget into the empty WorkerW, the widget appears
+// on the desktop surface, behind all normal application windows.
+//
 
-public class DesktopOwner {
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
-
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    public static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
-
-    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-    public static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
-
-    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-    public static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
-
-    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtr", SetLastError = true)]
-    private static extern IntPtr SetWindowLongPtr64(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
-
-    [DllImport("user32.dll", EntryPoint = "SetWindowLong", SetLastError = true)]
-    private static extern int SetWindowLong32(IntPtr hWnd, int nIndex, int dwNewLong);
-
-    public static IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong) {
-        if (IntPtr.Size == 8) {
-            return SetWindowLongPtr64(hWnd, nIndex, dwNewLong);
-        } else {
-            return new IntPtr(SetWindowLong32(hWnd, nIndex, dwNewLong.ToInt32()));
-        }
-    }
-
-    public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
-
-    public const int GWLP_HWNDPARENT = -8;
-
-    public static bool ApplyOwner() {
-        IntPtr progman = FindWindow("Progman", null);
-        if (progman == IntPtr.Zero) return false;
-
-        bool found = false;
-        EnumWindows(new EnumWindowsProc((hwnd, lParam) => {
-            StringBuilder sbClass = new StringBuilder(256);
-            GetClassName(hwnd, sbClass, sbClass.Capacity);
-            if (sbClass.ToString() == "Chrome_WidgetWin_1") {
-                StringBuilder sbTitle = new StringBuilder(256);
-                GetWindowText(hwnd, sbTitle, sbTitle.Capacity);
-                if (sbTitle.ToString() == "Battery Widget") {
-                    SetWindowLongPtr(hwnd, GWLP_HWNDPARENT, progman);
-                    found = true;
-                }
-            }
-            return true;
-        }), IntPtr.Zero);
-        return found;
-    }
+// Helper to get the class name of a window handle
+function getWindowClassName(hwnd) {
+  try {
+    const buf = Buffer.alloc(512);
+    const len = GetClassNameW(hwnd, buf, 256);
+    if (len <= 0) return '';
+    return buf.toString('utf16le', 0, len * 2);
+  } catch {
+    return '';
+  }
 }
-"@
-Add-Type -TypeDefinition $code -ErrorAction SilentlyContinue
-[DesktopOwner]::ApplyOwner()
-`;
 
-  execFile('powershell', ['-NoProfile', '-NonInteractive', '-Command', script], (error, stdout) => {
-    if (error) {
-      console.error('Failed to set widget owner to Progman:', error);
-    } else {
-      console.log('Set owner result:', stdout.trim());
+function findDesktopWorkerW() {
+  // Strategy 1: Find the Progman window directly via FindWindow
+  let progman = FindWindowW('Progman', null);
+  
+  // Strategy 2: If FindWindow fails, try GetShellWindow (returns Progman or its replacement)
+  if (!progman) {
+    console.log('[Desktop Embed] FindWindowW("Progman") returned null, trying GetShellWindow...');
+    const shellWin = GetShellWindow();
+    if (shellWin) {
+      const className = getWindowClassName(shellWin);
+      console.log('[Desktop Embed] GetShellWindow returned class:', className);
+      if (className === 'Progman') {
+        progman = shellWin;
+      }
     }
-  });
+  }
+
+  if (!progman) {
+    console.error('[Desktop Embed] Could not find Progman window via any strategy');
+    return null;
+  }
+  console.log('[Desktop Embed] Found Progman');
+
+  // Send undocumented message 0x052C to Progman.
+  // This forces Windows Explorer to spawn a WorkerW window behind the desktop icons.
+  const resultBuf = Buffer.alloc(8);
+  SendMessageTimeoutW(progman, 0x052C, 0, 0, SMTO_NORMAL, 1000, resultBuf);
+  console.log('[Desktop Embed] Sent 0x052C to spawn WorkerW');
+
+  // Find the WorkerW that contains SHELLDLL_DefView (desktop icons).
+  // We enumerate all top-level windows to find it.
+  let workerWWithShellView = null;
+
+  const findShellViewParent = koffi.register((hwnd, _lParam) => {
+    const shellView = FindWindowExW(hwnd, null, 'SHELLDLL_DefView', null);
+    if (shellView) {
+      workerWWithShellView = hwnd;
+      return 0; // Stop enumeration
+    }
+    return 1; // Continue
+  }, koffi.pointer(WNDENUMPROC));
+
+  EnumWindows(findShellViewParent, 0);
+  koffi.unregister(findShellViewParent);
+
+  if (!workerWWithShellView) {
+    // SHELLDLL_DefView might live directly inside Progman (no WorkerW sibling yet).
+    // Check if Progman itself contains SHELLDLL_DefView
+    const shellInProgman = FindWindowExW(progman, null, 'SHELLDLL_DefView', null);
+    if (shellInProgman) {
+      console.log('[Desktop Embed] SHELLDLL_DefView found inside Progman; embedding into Progman');
+      return progman;
+    }
+    console.error('[Desktop Embed] Could not find SHELLDLL_DefView anywhere');
+    return progman; // Last resort: try Progman anyway
+  }
+
+  // Now find the OTHER WorkerW — the empty one that was spawned by 0x052C.
+  // Use FindWindowExW to enumerate WorkerW windows after the one with SHELLDLL_DefView.
+  const nextWorkerW = FindWindowExW(null, workerWWithShellView, 'WorkerW', null);
+  if (nextWorkerW) {
+    console.log('[Desktop Embed] Found empty WorkerW behind desktop icons');
+    return nextWorkerW;
+  }
+
+  // If no sibling WorkerW, embed into Progman directly
+  console.log('[Desktop Embed] No sibling WorkerW found; embedding into Progman');
+  return progman;
+}
+
+// Convert Electron's native window handle Buffer to a koffi-compatible HWND
+function bufferToHwnd(buffer) {
+  // Electron's getNativeWindowHandle() returns a Buffer containing the raw HWND
+  // On 64-bit Windows, HWND is 8 bytes; on 32-bit it's 4 bytes
+  if (buffer.length >= 8) {
+    return koffi.as(buffer.readBigUInt64LE(0), HWND);
+  } else if (buffer.length >= 4) {
+    return koffi.as(buffer.readUInt32LE(0), HWND);
+  }
+  return null;
+}
+
+function embedInDesktop() {
+  if (!widgetWindow || widgetWindow.isDestroyed()) return false;
+
+  try {
+    // Get the native HWND of our Electron window
+    const widgetHwndBuffer = widgetWindow.getNativeWindowHandle();
+    const widgetHwnd = bufferToHwnd(widgetHwndBuffer);
+
+    if (!widgetHwnd) {
+      console.error('[Desktop Embed] Could not get widget native window handle');
+      return false;
+    }
+    console.log('[Desktop Embed] Widget HWND obtained');
+
+    // Find the desktop embedding target (WorkerW or Progman fallback)
+    const desktopHwnd = findDesktopWorkerW();
+    if (!desktopHwnd) {
+      console.error('[Desktop Embed] Desktop embedding failed — no target window. Widget will float as normal window.');
+      return false;
+    }
+
+    // Embed the widget as a child of the desktop window
+    const prevParent = SetParent(widgetHwnd, desktopHwnd);
+    if (!prevParent) {
+      console.error('[Desktop Embed] SetParent failed');
+      return false;
+    }
+
+    // Adjust extended styles: ensure tool window + no activate
+    const exStyle = Number(GetWindowLongPtrW(widgetHwnd, GWL_EXSTYLE));
+    SetWindowLongPtrW(widgetHwnd, GWL_EXSTYLE, exStyle | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE);
+
+    // Force style update
+    SetWindowPos(widgetHwnd, null, 0, 0, 0, 0,
+      SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOACTIVATE);
+
+    // Reposition widget to saved config coordinates
+    widgetWindow.setPosition(config.widget.x, config.widget.y);
+
+    workerWHwnd = desktopHwnd;
+    console.log('[Desktop Embed] ✓ Widget successfully embedded into desktop layer!');
+    return true;
+  } catch (err) {
+    console.error('[Desktop Embed] Error during embedding:', err);
+    return false;
+  }
 }
 
 // Create Widget Window
@@ -415,9 +541,11 @@ function createWidgetWindow() {
     frame: false,
     transparent: true,
     resizable: false,
-    alwaysOnTop: config.widget.alwaysOnTop,
     skipTaskbar: true,
+    type: 'toolbar',
     hasShadow: false,
+    show: false, // Don't show until embedded into desktop
+    title: 'Battery Widget',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -427,13 +555,26 @@ function createWidgetWindow() {
 
   widgetWindow.loadFile('widget.html');
 
-  // Pin to desktop after a short delay to ensure OS registration
-  setTimeout(pinWidgetToDesktop, 1000);
+  // Once the content is ready, embed the widget into the desktop layer
+  widgetWindow.webContents.once('did-finish-load', () => {
+    // Small delay to ensure window handle is fully initialized
+    setTimeout(() => {
+      const embedded = embedInDesktop();
+      if (embedded) {
+        console.log('[Widget] Embedded into desktop — showing widget');
+      } else {
+        // Fallback: if embedding fails, show as normal window with alwaysOnTop behavior
+        console.warn('[Widget] Desktop embedding failed — falling back to normal window mode');
+        widgetWindow.setAlwaysOnTop(config.widget.alwaysOnTop);
+      }
+      widgetWindow.show();
 
-  // Handle click-through configuration
-  if (config.widget.clickThrough) {
-    widgetWindow.setIgnoreMouseEvents(true, { forward: true });
-  }
+      // Handle click-through configuration
+      if (config.widget.clickThrough) {
+        widgetWindow.setIgnoreMouseEvents(true, { forward: true });
+      }
+    }, 100);
+  });
 
   widgetWindow.on('show', () => {
     if (updateTrayMenu) updateTrayMenu();
@@ -443,17 +584,9 @@ function createWidgetWindow() {
     if (updateTrayMenu) updateTrayMenu();
   });
 
-  widgetWindow.on('minimize', (event) => {
-    event.preventDefault();
-    setTimeout(() => {
-      if (widgetWindow && !widgetWindow.isDestroyed()) {
-        widgetWindow.restore();
-      }
-    }, 50);
-  });
-
   widgetWindow.on('closed', () => {
     widgetWindow = null;
+    workerWHwnd = null;
     if (updateTrayMenu) updateTrayMenu();
   });
 }
@@ -517,7 +650,8 @@ function createTray() {
         click: (item) => {
           config.widget.alwaysOnTop = item.checked;
           saveConfig(config);
-          if (widgetWindow) {
+          // Only apply alwaysOnTop in fallback mode (not desktop-embedded)
+          if (widgetWindow && !workerWHwnd) {
             widgetWindow.setAlwaysOnTop(item.checked);
           }
         }
@@ -643,7 +777,10 @@ ipcMain.handle('save-config', (event, newConfig) => {
     const width = Math.round((baseWidth + shadowPadding) * newConfig.widget.scale);
     const height = Math.round((150 + shadowPadding) * newConfig.widget.scale);
     widgetWindow.setSize(width, height);
-    widgetWindow.setAlwaysOnTop(newConfig.widget.alwaysOnTop);
+    // Only apply alwaysOnTop in fallback mode (not desktop-embedded)
+    if (!workerWHwnd) {
+      widgetWindow.setAlwaysOnTop(newConfig.widget.alwaysOnTop);
+    }
     widgetWindow.setIgnoreMouseEvents(newConfig.widget.clickThrough, { forward: true });
   }
   return config;

@@ -28,6 +28,7 @@ A premium, highly customizable, translucent desktop widget for Windows that repl
 ## ✨ Features
 
 * **🎨 iOS Aesthetic & Translucency:** Uses native Windows graphics layering combined with Gaussian blur (`backdrop-filter`) and light border highlights to deliver a modern, premium look.
+* **📌 Native Desktop Pinning:** The widget embeds itself directly into the Windows `WorkerW` layer, pinning it safely behind your desktop icons and apps (like Rainmeter or Wallpaper Engine). It stays glued to the wallpaper and never disappears when using "Show Desktop" (Win+D).
 * **📈 Resource & Device Monitoring:** Supports CPU usage, RAM utilization, laptop battery charging state, and paired Bluetooth device batteries.
 * **🎧 Intelligent Bluetooth Routing:**
   * Auto-routing dynamically binds to whichever Bluetooth device is actively online.

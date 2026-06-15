@@ -1,9 +1,8 @@
 :root {
-  --background-color: rgba(20, 20, 22, 0.45);
+  --background-color: rgba(20, 20, 22, 0.75);
   --border-color: rgba(255, 255, 255, 0.12);
   --accent-color: #30D158;
   --text-color: #FFFFFF;
-  --blur-radius: 25px;
   --widget-scale: 1.0;
 }
 
@@ -41,9 +40,7 @@ html, body {
   height: 100%;
   border-radius: 28px;
   background: var(--background-color);
-  opacity: var(--widget-opacity, 0.85);
-  backdrop-filter: blur(var(--blur-radius));
-  -webkit-backdrop-filter: blur(var(--blur-radius));
+  opacity: var(--widget-opacity, 1.0);
   border: 1.5px solid var(--border-color);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), 
               inset 0 1px 1px rgba(255, 255, 255, 0.1);

@@ -30,6 +30,18 @@
     "directories": {
       "output": "dist"
     },
+    "files": [
+      "main.js",
+      "preload.js",
+      "widget.html",
+      "widget.css",
+      "widget.js",
+      "settings.html",
+      "settings.css",
+      "settings.js",
+      "launch.vbs",
+      "config.json"
+    ],
     "win": {
       "target": [
         "nsis"
@@ -43,5 +55,8 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Battery Widget"
     }
+  },
+  "dependencies": {
+    "koffi": "^3.0.2"
   }
 }
